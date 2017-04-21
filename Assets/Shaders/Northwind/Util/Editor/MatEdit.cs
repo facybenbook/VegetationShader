@@ -197,6 +197,11 @@ namespace Northwind.Editors.Shaders
         }
 
         //Static Group
+        public static void BeginGroup(GroupStyles style = GroupStyles.Main, bool spacing = false)
+        {
+            BeginGroup(new GUIContent(), scopeMaterial, style, spacing);
+        }
+
         public static void BeginGroup(GUIContent content, GroupStyles style = GroupStyles.Main, bool spacing = false)
         {
             BeginGroup(content, scopeMaterial, style, spacing);
@@ -205,7 +210,10 @@ namespace Northwind.Editors.Shaders
         public static void BeginGroup(GUIContent content, Material material, GroupStyles style = GroupStyles.Main, bool spacing = false)
         {
             EditorGUILayout.BeginVertical(groupStyles[(int)style]);
-            EditorGUILayout.LabelField(content, EditorStyles.boldLabel);
+            if (content.text != "")
+            {
+                EditorGUILayout.LabelField(content, EditorStyles.boldLabel);
+            }
 
             if (spacing)
             {
@@ -323,6 +331,19 @@ namespace Northwind.Editors.Shaders
             material.SetInt(property, EditorGUILayout.IntField(content, material.GetInt(property)));
         }
 
+        //Enum Field
+        public static int EnumField(GUIContent content, string property, GUIContent[] options)
+        {
+            return EnumField(content, property, options, scopeMaterial);
+        }
+
+        public static int EnumField(GUIContent content, string property, GUIContent[] options, Material material)
+        {
+            int lResult = EditorGUILayout.Popup(content, material.GetInt(property), options);
+            material.SetInt(property, lResult);
+            return lResult;
+        }
+
         //Float Field
         public static void FloatField(GUIContent content, string property)
         {
@@ -348,6 +369,51 @@ namespace Northwind.Editors.Shaders
                 lValue = Mathf.Round(lValue);
             }
             material.SetFloat(property, lValue);
+        }
+
+        //Min-Max Slider Field
+        public static void MinMaxSliderField(GUIContent content, string startProperty, string endProperty, float min, float max, bool drawFloatFields = false)
+        {
+            MinMaxSliderField(content, startProperty, endProperty, min, max, scopeMaterial, drawFloatFields);
+        }
+
+        public static void MinMaxSliderField(GUIContent content, string startProperty, string endProperty, float min, float max, Material material, bool drawFloatFields = false)
+        {
+            float lMinValue = material.GetFloat(startProperty);
+            float lMaxValue = material.GetFloat(endProperty);
+
+            EditorGUILayout.MinMaxSlider(content, ref lMinValue, ref lMaxValue, min, max);
+
+            if (drawFloatFields)
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                lMinValue = EditorGUILayout.FloatField(lMinValue);
+                lMaxValue = EditorGUILayout.FloatField(lMaxValue);
+
+                lMinValue = Mathf.Clamp(Mathf.Min(lMinValue, lMaxValue), min, max);
+                lMaxValue = Mathf.Clamp(Mathf.Max(lMaxValue, lMinValue), min, max);
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            material.SetFloat(startProperty, lMinValue);
+            material.SetFloat(endProperty, lMaxValue);
+        }
+
+        //Packed Enum Field
+        public static int EnumPackedField(GUIContent content, string property, GUIContent[] options, PackagePart part)
+        {
+            return EnumPackedField(content, property, options, part, scopeMaterial);
+        }
+
+        public static int EnumPackedField(GUIContent content, string property, GUIContent[] options, PackagePart part, Material material)
+        {
+            Vector4 lOriginal = material.GetVector(property);
+            int lResult = EditorGUILayout.Popup(content, (int)(lOriginal[(int)part]), options);
+            lOriginal[(int)part] = lResult;
+            material.SetVector(property, lOriginal);
+            return lResult;
         }
 
         //Packed Float Field
@@ -380,6 +446,57 @@ namespace Northwind.Editors.Shaders
                 lOriginal[(int)part] = Mathf.Round(lOriginal[(int)part]);
             }
             material.SetVector(property, lOriginal);
+        }
+
+        //Packed Min-Max Slider Field
+        public static void MinMaxSliderPackedField(GUIContent content, string property, PackagePart startPart, PackagePart endPart, float min, float max, bool drawFloatFields = false)
+        {
+            MinMaxSliderPackedField(content, property, startPart, endPart, min, max, scopeMaterial, drawFloatFields);
+        }
+
+        public static void MinMaxSliderPackedField(GUIContent content, string property, PackagePart startPart, PackagePart endPart, float min, float max, Material material, bool drawFloatFields = false)
+        {
+            Vector4 lOriginal = material.GetVector(property);
+            float lMinValue = lOriginal[(int)startPart];
+            float lMaxValue = lOriginal[(int)endPart];
+
+            EditorGUILayout.MinMaxSlider(content, ref lMinValue, ref lMaxValue, min, max);
+
+            if (drawFloatFields)
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                lMinValue = EditorGUILayout.FloatField(lMinValue);
+                lMaxValue = EditorGUILayout.FloatField(lMaxValue);
+
+                lMinValue = Mathf.Clamp(Mathf.Min(lMinValue, lMaxValue), min, max);
+                lMaxValue = Mathf.Clamp(Mathf.Max(lMaxValue, lMinValue), min, max);
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            lOriginal[(int)startPart] = lMinValue;
+            lOriginal[(int)endPart] = lMaxValue;
+
+            material.SetVector(property, lOriginal);
+        }
+
+        //Float As Vector Field
+        public static void FloatAsVectorField(GUIContent content, params string[] properties)
+        {
+            FloatAsVectorField(content, scopeMaterial, properties);
+        }
+
+        public static void FloatAsVectorField(GUIContent content, Material material, params string[] properties)
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PrefixLabel(content);
+            for (int p = 0; p < properties.Length; p++)
+            {
+                float lVal = EditorGUILayout.FloatField(material.GetFloat(properties[p]));
+                material.SetFloat(properties[p], lVal);
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         //Vector Field
